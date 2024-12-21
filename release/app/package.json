@@ -1,0 +1,23 @@
+{
+  "name": "writer-app",
+  "version": "1.0.0",
+  "description": "A get video text application",
+  "license": "MIT",
+  "author": {
+    "name": "liuxx",
+    "email": "raxzib@gmail.com",
+    "url": "https://github.com/electron-react-boilerplate"
+  },
+  "main": "./dist/main/main.js",
+  "scripts": {
+    "rebuild": "node -r ts-node/register ../../.erb/scripts/electron-rebuild.js",
+    "postinstall": "npm run rebuild && npm run link-modules",
+    "link-modules": "node -r ts-node/register ../../.erb/scripts/link-modules.ts"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "pg": "^8.13.1",
+    "pg-query-stream": "^4.7.1",
+    "tedious": "^18.6.1"
+  }
+}
