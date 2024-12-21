@@ -21,7 +21,7 @@
   },
   "license": "Mine",
   "author": {
-    "name": "Writer App",
+    "name": "VideoDownloader",
     "email": "raxzib@gmail.com",
     "url": "https://electron-react-boilerplate.js.org"
   },
@@ -242,8 +242,8 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "writer-app",
-      "repo": "writer-app"
+      "owner": "VideoDownloader-app",
+      "repo": "VideoDownloader-app"
     }
   },
   "collective": {
