@@ -8,9 +8,9 @@
 
 ![](https://github.com/lulu-ls/assets/blob/2d92c921a0ad679a6699a1ffa55df97448da702d/main2.jpg)
 
-#### 上传
+#### 下载
 
-![](https://github.com/lulu-ls/assets/edit/blob/main2.jpg?row=true)
+![](https://github.com/lulu-ls/assets/blob/2d92c921a0ad679a6699a1ffa55df97448da702d/main3.jpg)
 
 ## 使用方法
 
