@@ -27,27 +27,37 @@ class BiliBili implements Writer {
     await checkLogin('');
 
     const { html, redirect } = await checkUrlRedirect(videoUrl);
-
     // (https://www.bilibili.com/video/BV1hT42167Z3/?spm_id_from=333.1007.tianma.3-3-9.click&vd_source=c916eadc6f66c6eb6ddfb88ed1e5b669)
     const videoCategory = checkUrl(redirect);
     if (videoCategory === '') {
       throw new Error('请检查视频地址');
     }
 
-    const res = await parseHtml(html, videoCategory, redirect);
-    if (res === -1) {
+    // const res = await parseHtml(html, videoCategory, redirect);
+    // if (res === -1) {
+    //   throw new Error('视频解析失败');
+    // }
+
+    // const thirdApi = await dogApi.post(videoUrl);
+
+    try {
+      const res = this.parseHtml(html);
+      res.orgUrl = videoUrl;
+      return res;
+    } catch (error) {
       throw new Error('视频解析失败');
     }
-    return {
-      title: res.title,
-      audioUrl: res.audio[0]?.url,
-      cover: res.cover,
-      duration: res.duration,
-      fmtDuration: FormatSeconed(res.duration),
-      blogger: res.up[0]?.name,
-      videoUrl: res.video[0]?.url,
-      orgUrl: videoUrl,
-    };
+
+    // return {
+    //   title: res.title,
+    //   audioUrl: res.audio[0]?.url,
+    //   cover: res.cover,
+    //   duration: res.duration,
+    //   fmtDuration: FormatSeconed(res.duration),
+    //   blogger: res.up[0]?.name,
+    //   videoUrl: res.downloadUrl.video,
+    //   orgUrl: videoUrl,
+    // };
   }
 
   async download(params: downloadReq): Promise<downloadResp> {
@@ -63,29 +73,15 @@ class BiliBili implements Writer {
       defaultDir: params.defaultDir as string,
     };
 
-    // 下载音频
-    const downloadAudioPath = `${downloadPath}${uuidv4()}.m4s`;
-    await DownloadFile(params.audioUrl as string, downloadAudioPath);
-
     // 下载视频
-    if (params.type === 'all' || params.type === 'video') {
-      const downLoadVideoPath = `${downloadPath}${uuidv4()}.m4s`;
-      const mergeVideoPath = `${savePath}.mp4`;
-      await DownloadFile(params.videoUrl as string, downLoadVideoPath);
-      // 视频需要合并
-      await this.mergeVideoAudio(
-        downLoadVideoPath,
-        downloadAudioPath,
-        mergeVideoPath,
-      );
-
-      res.videoName = path.basename(mergeVideoPath);
-    }
+    const downLoadVideoPath = `${savePath}.mp4`;
+    await DownloadFile(params.videoUrl as string, downLoadVideoPath);
+    res.videoName = path.basename(downLoadVideoPath);
 
     // 转为 mp3
     if (params.type === 'all' || params.type === 'audio') {
       const mp3Path = `${savePath}.mp3`;
-      await this.m4sToMp3(downloadAudioPath, mp3Path);
+      await this.mp4ToMp3(downLoadVideoPath, mp3Path);
       res.audioName = path.basename(mp3Path);
     }
 
@@ -93,29 +89,10 @@ class BiliBili implements Writer {
     return res;
   }
 
-  mergeVideoAudio(videoPath: string, audioPath: string, out: string) {
-    return new Promise((resolve, reject) => {
-      ffmpeg()
-        .input(videoPath)
-        .audioCodec('copy')
-        .input(audioPath)
-        .videoCodec('copy')
-        .format('mp4')
-        .on('end', () => {
-          resolve(out);
-        })
-        .on('error', (err: any) => {
-          console.log(err);
-          reject(err);
-        })
-        .save(out);
-    });
-  }
-
-  async m4sToMp3(m4sFilePath: string, mp3Path: string): Promise<string> {
+  async mp4ToMp3(mp4FilePath: string, mp3Path: string) {
     return new Promise((resolve, reject) => {
       // 转换格式
-      ffmpeg(m4sFilePath)
+      ffmpeg(mp4FilePath)
         // .audioBitrate('1k') // 设置音频比特率为96kbps
         .audioCodec('libmp3lame') // 设置音频编码器为libmp3lame
         .format('mp3') // 输出格式为mp3
@@ -129,6 +106,31 @@ class BiliBili implements Writer {
         })
         .save(mp3Path);
     });
+  }
+
+  parseHtml(html: string): VideoInfo {
+    let video: any = html.match(
+      /"readyVideoUrl"\:"([\s\S]*?)","readyDuration"\:/,
+    );
+
+    let duration: any = html.match(
+      /,"readyDuration"\:([\s\S]*?),"noRecommend"\:/,
+    );
+
+    let blogger: any = html.match(/name="author" content="([\s\S]*?)"\>/);
+
+    let title: any = html.match(/name="title" content="([\s\S]*?)"\>/);
+    console.log();
+
+    return {
+      title: title[1],
+      // audioUrl: res.audio[0]?.url,
+      // cover: res.cover,
+      duration: Number(duration[1]),
+      fmtDuration: FormatSeconed(Number(duration[1])),
+      blogger: blogger[1],
+      videoUrl: video[1],
+    };
   }
 }
 
@@ -170,8 +172,20 @@ const checkUrlRedirect = async (videoUrl: string) => {
     videoUrl,
     config: {
       headers: {
-        'User-Agent': `${UA}`,
+        // 'User-Agent': `${UA}`,
+        // authority: host,
+        method: 'GET',
+        // path: path,
+        // scheme: scheme,
         'Content-Type': 'application/json; charset=utf-8',
+        accept:
+          'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'accept-encoding': 'gzip, deflate, br',
+        'accept-language': 'zh-CN,zh;q=0.9',
+        'cache-control': 'max-age=0',
+        'upgrade-insecure-requests': '1',
+        'user-agent':
+          'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.25 Mobile Safari/537.36',
         // cookie: `SESSDATA=` //${store.settingStore(pinia).SESSDATA},
       },
     },
@@ -230,6 +244,7 @@ const parseBV = async (html: string, url: string) => {
       );
       if (!downLoadData) throw new Error('parse bv error');
       downLoadData = JSON.parse(downLoadData[1]);
+
       acceptQuality = {
         accept_quality: downLoadData.data.accept_quality,
         video: downLoadData.data.dash.video,
@@ -238,6 +253,11 @@ const parseBV = async (html: string, url: string) => {
     } catch (error) {
       acceptQuality = await getAcceptQuality(videoData.cid, videoData.bvid);
     }
+
+    let readyData: any = html.match(
+      /"readyVideoUrl"\:"([\s\S]*?)","readyDuration"\:/,
+    );
+    console.log(readyData);
 
     const obj: VideoData = {
       id: '',

@@ -113,7 +113,7 @@ function Home() {
     } catch (error) {
       console.error(error);
       setStepStatus('exception');
-      setStepText('导出文案失败');
+      setStepText('导出资源失败');
     } finally {
       setStepLoading(false);
     }
